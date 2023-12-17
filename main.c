@@ -3,52 +3,70 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+char *Set_LED(char color, uint8_t state);
+char *LED_Control(char c);
+
 int main(void)
 {
-	  
-	HC05_init(); // call HC05_init() to initialze UART5 of TM4C123GH6PM
+	uint8_t read_flag = 0;
+	// Init UART5 module for HC-05
+	HC05_init();
 	
-	/* Set PF1, PF2 and PF3 as digital output pins */
+	// Config PINs
 
-	SYSCTL_RCGCGPIO_R |= 0x20;	/* enable clock to GPIOF */
-	GPIO_PORTF_DIR_R |= 0x0E;	// set PF1, PF2 and PF3 as digital output pin
-	GPIO_PORTF_DEN_R |= 0x0E;	// CON PF1, PF2 and PF3 as digital GPIO pins
+	// CLK
+	SYSCTL_RCGCGPIO_R |= 0x20;
 
-	Delay(1000);
+	// Set Port F PINs 1, 2 and 3 as digital GPIO pins
+	GPIO_PORTF_DIR_R |= 0x0E;
+
+	// Enable digital function for PF1, PF2 and PF3
+	GPIO_PORTF_DEN_R |= 0x0E;
+
+	// Delay to make sure clock is stable
+	delayMs(1);
+        
+    Bluetooth_Write_String("Hi, welcome to the bluetooth terminal application!\n");
 	
 	while(1) {
 		char c = Bluetooth_Read();
+		if (read_flag == 0) {
+			char *LED_ctrl_ret = LED_Control(c);
 
-		char* LED_ctrl_ret = LED_Control(c);
+			Bluetooth_Write_String(LED_ctrl_ret);
 
-		Bluetooth_Write_String(LED_ctrl_ret);
+			read_flag = 1;
+
+		} else if (read_flag == 1) {
+			read_flag = 0;
+		};
 	}
 }
 
-const char *Set_LED(char color, uint8_t state)
+char *Set_LED(char color, uint8_t state)
 {
 	uint8_t bit_idx;
-	const char *ret;
+	char *ret;
 
 	switch (color)
 	{
 	case 'R':
+    case 'r':
 		bit_idx = 1;
 		ret = (state) ? "RED LED ON\n" : "RED LED OFF\n";
 		break;
 
 	case 'B':
+    case 'b':
 		bit_idx = 2;
 		ret = (state) ? "BLUE LED ON\n" : "BLUE LED OFF\n";
 		break;
 
 	case 'G':
+    case 'g':
 		bit_idx = 3;
 		ret = (state) ? "GREEN LED ON\n" : "GREEN LED OFF\n";
 		break;
-
-	default:
-		return "Invalid color\n";
 	}
 
 	if (state)
@@ -59,7 +77,7 @@ const char *Set_LED(char color, uint8_t state)
 	return ret;
 }
 
-const char *LED_Control(char c)
+char *LED_Control(char c)
 {
 	switch (c)
 	{
@@ -67,13 +85,15 @@ const char *LED_Control(char c)
 	case 'B':
 	case 'G':
 		return Set_LED(c, 1);
+                break;
 
 	case 'r':
 	case 'b':
 	case 'g':
 		return Set_LED(c, 0);
-
+                break;
+	
 	default:
-		return "Invalid input\n";
+		return "Invalid command\n";
 	}
 }
