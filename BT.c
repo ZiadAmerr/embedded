@@ -88,6 +88,7 @@ void BT_Write(unsigned char data)
 
 void BT_WriteStr(char *str)
 {
+    // send bytes until end of string
     while (*str) {
         Bluetooth_Write(*(str++));
     }
